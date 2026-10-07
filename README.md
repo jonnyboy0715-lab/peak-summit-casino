@@ -1,36 +1,37 @@
 # Peak Summit Casino
 
-A PEAK-first BepInEx mod concept that adds a summit door to a time-limited gambling room.
+A PEAK-first BepInEx prototype for a summit door that opens into a time-limited gambling room.
 
-This repository is a starting point for a BepInEx plugin that sits inside PEAK and adds:
-- a summit door or trigger at the climb endpoint
-- a multiplayer gambling room
-- a timer that kicks everyone out after a fixed window
-- a full run reset so the room can only re-open after finishing the level
+This project is intentionally a source-first prototype rather than a verified, played build. It is designed to be compiled against the PEAK install on this PC and tested in a real co-op lobby before being packaged for Melty.
 
-This project is not yet a completed release. It is the foundation for the build/test loop and is designed to be placed in your PEAK install under `BepInEx/plugins` once the PEAK assemblies and mod loader are available in the game folder.
+## What it does
 
-## Intended design
+- Adds a summit door marker in the PEAK scene flow.
+- Creates a room trigger that can be connected to the real summit geometry once the exact PEAK prefab and scene structure are mapped.
+- Tracks the room timer and kicks players out after the configured window.
+- Provides a clean hook for the room to be re-enabled only after the level is completed.
 
-- Host game: PEAK
-- Mod type: BepInEx plugin
-- Multiplayer: PEAK co-op players enter together
-- Gamblers: shared pot and team-based gambling, with a timer instead of endless room access
-- Portal flow: summit door -> room -> timeout -> return to PEAK level flow -> complete run -> room unlocks next time
+## Intended flow
+
+1. The player reaches the summit.
+2. The summit door becomes active.
+3. All players enter the gambling room together.
+4. A timer counts down.
+5. The room expires and players are returned to the run.
+6. The room unlocks again only after the level is completed and a new PEAK run begins.
 
 ## Install layout
 
 Place the compiled DLL in:
 
-`<PEAK install folder>/BepInEx/plugins/PeakSummitCasino.dll`
+`C:\Program Files (x86)\Steam\steamapps\common\PEAK\BepInEx\plugins\PeakSummitCasino.dll`
 
-If your PEAK install is under a custom Steam library path, use that folder instead.
+## Project layout
 
-## Repo structure
+- `src/PeakSummitCasino/PeakSummitCasino.csproj` - project definition
+- `src/PeakSummitCasino/PeakSummitCasinoPlugin.cs` - plugin entry point
+- `src/PeakSummitCasino/SummitDoorController.cs` - summit trigger and room timer logic
 
-- `src/PeakSummitCasino/PeakSummitCasino.csproj` - project file for the plugin
-- `src/PeakSummitCasino/SummitGamblingRoomPlugin.cs` - plugin entry point and runtime logic
+## Important note
 
-## Next step
-
-Compile the project against your local PEAK installation and then test in the game with a PEAK co-op lobby. Once the summit door and room flow are proven, package the DLL with a release zip for Melty.
+This is not a tested release. It is the source foundation for the first playable build. The next step is to install and test it inside PEAK with a real lobby, then refine the summit door placement and room timing against the actual PEAK scene and player flow.
