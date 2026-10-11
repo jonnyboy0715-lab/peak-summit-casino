@@ -1,0 +1,54 @@
+from PIL import Image, ImageDraw, ImageFont
+
+W = H = 256
+
+img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+draw = ImageDraw.Draw(img)
+
+# Background gradient
+for y in range(H):
+    t = y / H
+    r = int(46 + 140 * t)
+    g = int(28 + 120 * t)
+    b = int(90 + 110 * t)
+    draw.line((0, y, W, y), fill=(r, g, b, 255))
+
+# Main rounded panel
+draw.rounded_rectangle((18, 18, 238, 238), radius=30, fill=(16, 12, 44, 220), outline=(255, 255, 255, 180), width=4)
+
+# Gold chip
+chip_center = (128, 128)
+chip_radius = 72
+draw.ellipse((chip_center[0] - chip_radius, chip_center[1] - chip_radius,
+             chip_center[0] + chip_radius, chip_center[1] + chip_radius),
+             fill=(255, 201, 88, 255), outline=(255, 255, 255, 220), width=8)
+
+# Inner chip ring
+draw.ellipse((chip_center[0] - 48, chip_center[1] - 48,
+             chip_center[0] + 48, chip_center[1] + 48),
+             fill=(0, 0, 0, 0), outline=(255, 255, 255, 200), width=5)
+
+# Diamond / win symbol
+diamond = [(128, 74), (180, 128), (128, 182), (76, 128)]
+draw.polygon(diamond, fill=(255, 89, 117, 255), outline=(255, 255, 255, 180), width=6)
+
+# Add a little “7” in the middle
+try:
+    font = ImageFont.truetype("arial.ttf", 70)
+except:
+    font = ImageFont.load_default()
+
+text = "7"
+bbox = draw.textbbox((0, 0), text, font=font)
+text_w = bbox[2] - bbox[0]
+text_h = bbox[3] - bbox[1]
+x = 128 - text_w / 2
+y = 128 - text_h / 2
+draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+
+# Small accent dots around the chip
+for cx, cy in [(74, 84), (182, 84), (74, 172), (182, 172)]:
+    draw.ellipse((cx - 10, cy - 10, cx + 10, cy + 10), fill=(66, 232, 193, 255))
+
+img.save("icon.png")
+print("Created icon.png")
