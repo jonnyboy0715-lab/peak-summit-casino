@@ -4,6 +4,6 @@
   "website_url": "https://github.com/jonnyboy0715-lab/peak-summit-casino",
   "description": "A BepInEx multiplayer mod for PEAK that adds a gambling room at the summit with time-limited games",
   "dependencies": [
-    BepInEx-BepInExPack_PEAK-5.4.75301
+    "BepInEx-BepInExPack_PEAK-5.4.75301"
   ]
 }
