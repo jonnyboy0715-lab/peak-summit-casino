@@ -1,54 +1,51 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
+# Create a 256x256 image
 W = H = 256
-
-img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+img = Image.new("RGBA", (W, H), (245, 245, 245, 255))
 draw = ImageDraw.Draw(img)
 
-# Background gradient
-for y in range(H):
-    t = y / H
-    r = int(46 + 140 * t)
-    g = int(28 + 120 * t)
-    b = int(90 + 110 * t)
-    draw.line((0, y, W, y), fill=(r, g, b, 255))
+purple = (156, 74, 170, 255)
 
-# Main rounded panel
-draw.rounded_rectangle((18, 18, 238, 238), radius=30, fill=(16, 12, 44, 220), outline=(255, 255, 255, 180), width=4)
+# Large main outline shape
+# Draw a big rounded-rectangle-like shape
+draw.rounded_rectangle(
+    [36, 50, 220, 204],
+    radius=20,
+    outline=purple,
+    width=4,
+    fill=(0, 0, 0, 0)
+)
 
-# Gold chip
-chip_center = (128, 128)
-chip_radius = 72
-draw.ellipse((chip_center[0] - chip_radius, chip_center[1] - chip_radius,
-             chip_center[0] + chip_radius, chip_center[1] + chip_radius),
-             fill=(255, 201, 88, 255), outline=(255, 255, 255, 220), width=8)
+# Top and side lines to match the sketch more closely
+draw.line((48, 58, 112, 58), fill=purple, width=4)
+draw.line((114, 58, 186, 58), fill=purple, width=4)
+draw.line((188, 58, 206, 58), fill=purple, width=4)
 
-# Inner chip ring
-draw.ellipse((chip_center[0] - 48, chip_center[1] - 48,
-             chip_center[0] + 48, chip_center[1] + 48),
-             fill=(0, 0, 0, 0), outline=(255, 255, 255, 200), width=5)
+draw.line((66, 88, 66, 166), fill=purple, width=4)
+draw.line((66, 166, 120, 166), fill=purple, width=4)
+draw.line((120, 166, 180, 166), fill=purple, width=4)
+draw.line((180, 166, 196, 166), fill=purple, width=4)
 
-# Diamond / win symbol
-diamond = [(128, 74), (180, 128), (128, 182), (76, 128)]
-draw.polygon(diamond, fill=(255, 89, 117, 255), outline=(255, 255, 255, 180), width=6)
+# Left little block
+draw.rounded_rectangle([78, 106, 130, 156], radius=6, outline=purple, width=3, fill=(0,0,0,0))
+draw.line((90, 126, 118, 126), fill=purple, width=3)
+draw.line((104, 108, 104, 154), fill=purple, width=3)
 
-# Add a little “7” in the middle
-try:
-    font = ImageFont.truetype("arial.ttf", 70)
-except:
-    font = ImageFont.load_default()
+# Right little block
+draw.rounded_rectangle([156, 106, 206, 156], radius=6, outline=purple, width=3, fill=(0,0,0,0))
+draw.line((168, 126, 194, 126), fill=purple, width=3)
+draw.line((181, 108, 181, 154), fill=purple, width=3)
 
-text = "7"
-bbox = draw.textbbox((0, 0), text, font=font)
-text_w = bbox[2] - bbox[0]
-text_h = bbox[3] - bbox[1]
-x = 128 - text_w / 2
-y = 128 - text_h / 2
-draw.text((x, y), text, font=font, fill=(255, 255, 255, 255))
+# Inner center area
+draw.rounded_rectangle([90, 110, 170, 146], radius=8, outline=purple, width=3, fill=(0,0,0,0))
 
-# Small accent dots around the chip
-for cx, cy in [(74, 84), (182, 84), (74, 172), (182, 172)]:
-    draw.ellipse((cx - 10, cy - 10, cx + 10, cy + 10), fill=(66, 232, 193, 255))
+# A few small extra features like the sketch
+draw.line((152, 96, 152, 112), fill=purple, width=3)
+draw.line((110, 96, 110, 112), fill=purple, width=3)
+draw.line((80, 96, 80, 112), fill=purple, width=3)
+draw.line((180, 92, 180, 110), fill=purple, width=3)
 
+# Save as real PNG file
 img.save("icon.png")
-print("Created icon.png")
+print("Created: icon.png")
