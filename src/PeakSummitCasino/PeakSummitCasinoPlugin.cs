@@ -13,7 +13,7 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
 {
     public const string ModId = "jonnyboy0715-lab.peak-summit-casino";
     public const string ModName = "PeakSummitCasino";
-    public const string ModVersion = "0.1.2";
+    public const string ModVersion = "0.1.0";
 
     private const string SummitDoorName = "PeakSummitCasino_SummitDoor";
     private const string SummitSceneKeyword = "summit";
@@ -24,6 +24,7 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
     private static ManualLogSource? _log;
 
     private readonly Dictionary<string, SummitDoorController> _doorsByScene = new();
+    private GameObject? _playerCharacter;
 
     private void Awake()
     {
@@ -47,17 +48,101 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
             "SummitGamblingRoom",
             "DoorPosition",
             new Vector3(0f, 5f, 10f),
-            "Position of the casino door at the summit (X, Y, Z)."
+            "Position of the casino door in the summit scene."
         );
 
         SceneManager.sceneLoaded += OnSceneLoaded;
-
-        _log.LogInfo("PeakSummitCasino prototype loaded. Waiting for summit scene...");
+        _log.LogInfo("PeakSummitCasino loaded. Press F1 to log player coordinates. Waiting for summit scene...");
     }
 
     private void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void Update()
+    {
+        // F1 debug feature: log player coordinates
+        if (Input.GetKeyDown(KeyCode.F1))
+        {
+            LogPlayerCoordinates();
+        }
+    }
+
+    private void LogPlayerCoordinates()
+    {
+        // Try to find the player character if we haven't already
+        if (_playerCharacter == null)
+        {
+            _playerCharacter = FindPlayerCharacter();
+        }
+
+        if (_playerCharacter == null)
+        {
+            _log?.LogWarning("[DEBUG] Player character not found. Make sure you're in the game.");
+            Debug.LogWarning("[DEBUG] Player character not found. Make sure you're in the game.");
+            return;
+        }
+
+        var position = _playerCharacter.transform.position;
+        var message = $"[DEBUG] Player Position: X={position.x:F2}, Y={position.y:F2}, Z={position.z:F2}";
+
+        _log?.LogInfo(message);
+        Debug.Log(message);
+        
+        // Also log the scene name and all nearby objects
+        var currentScene = SceneManager.GetActiveScene();
+        _log?.LogInfo($"[DEBUG] Current Scene: {currentScene.name}");
+        Debug.Log($"[DEBUG] Current Scene: {currentScene.name}");
+    }
+
+    private GameObject? FindPlayerCharacter()
+    {
+        // Search for player by common names
+        string[] playerNames = { "Player", "player", "Character", "character", "PlayerCharacter", "playerCharacter" };
+
+        foreach (var name in playerNames)
+        {
+            var found = GameObject.Find(name);
+            if (found != null)
+            {
+                _log?.LogInfo($"[DEBUG] Found player object: {found.name}");
+                return found;
+            }
+        }
+
+        // Search all active game objects with "Player" in the name
+        var allObjects = FindObjectsOfType<GameObject>();
+        foreach (var obj in allObjects)
+        {
+            if (obj.name.Contains("Player", StringComparison.OrdinalIgnoreCase))
+            {
+                _log?.LogInfo($"[DEBUG] Found player object: {obj.name}");
+                return obj;
+            }
+        }
+
+        // Search for any object with a CharacterController component (common player pattern)
+        var charControllers = FindObjectsOfType<CharacterController>();
+        if (charControllers.Length > 0)
+        {
+            _log?.LogInfo($"[DEBUG] Found player via CharacterController: {charControllers[0].gameObject.name}");
+            return charControllers[0].gameObject;
+        }
+
+        // Search for any object with a Rigidbody that might be the player
+        var rigidbodies = FindObjectsOfType<Rigidbody>();
+        foreach (var rb in rigidbodies)
+        {
+            if (rb.gameObject.name.Contains("Player", StringComparison.OrdinalIgnoreCase))
+            {
+                _log?.LogInfo($"[DEBUG] Found player via Rigidbody: {rb.gameObject.name}");
+                return rb.gameObject;
+            }
+        }
+
+        _log?.LogWarning("[DEBUG] Could not find player character by any method.");
+        return null;
     }
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -69,22 +154,23 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
         {
             existingDoor.SetRoomDuration(_roomDurationSeconds.Value);
             existingDoor.SetDebugLogging(_debugLogging.Value);
-            _log?.LogInfo($"Reused existing door in scene '{scene.name}'.");
             return;
         }
 
         var door = CreateSummitDoor(scene);
+        if (door == null)
+            return;
+
         door.SetRoomDuration(_roomDurationSeconds.Value);
         door.SetDebugLogging(_debugLogging.Value);
         _doorsByScene[scene.name] = door;
 
-        _log?.LogInfo($"Summit casino door initialized in scene '{scene.name}' at position {_doorPosition.Value}.");
+        _log?.LogInfo($"Summit casino door initialized in scene '{scene.name}' at {_doorPosition.Value}.");
     }
 
     private static bool ShouldHandleScene(Scene scene)
     {
         var name = scene.name;
-        // Only handle the summit scene specifically
         return name.Contains(SummitSceneKeyword, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -95,47 +181,37 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
         {
             var controller = existing.GetComponent<SummitDoorController>();
             if (controller != null)
-            {
-                _log?.LogWarning("Door already exists; reusing it.");
                 return controller;
-            }
         }
 
-        // Create the door game object with a visible representation
         var doorObj = new GameObject(SummitDoorName);
         doorObj.transform.position = _doorPosition.Value;
         doorObj.transform.rotation = Quaternion.identity;
 
-        // Add a visible mesh (cube as placeholder for a door)
         var meshFilter = doorObj.AddComponent<MeshFilter>();
         var meshRenderer = doorObj.AddComponent<MeshRenderer>();
-        
         meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
-        
-        var mat = new Material(Shader.Find("Standard"));
-        mat.color = new Color(0.8f, 0.2f, 0.8f, 1f); // Purple-ish color for visibility
-        meshRenderer.material = mat;
 
-        // Scale the door to look like a doorway
-        doorObj.transform.localScale = new Vector3(3f, 4f, 0.2f);
+        var material = new Material(Shader.Find("Standard"));
+        material.color = new Color(0.75f, 0.35f, 0.8f, 1f);
+        meshRenderer.material = material;
 
-        // Add collider for trigger detection
-        var collider = doorObj.AddComponent<BoxCollider>();
-        collider.isTrigger = true;
-        collider.size = Vector3.one; // Size is 1,1,1 since the mesh is scaled
+        doorObj.transform.localScale = new Vector3(3f, 4f, 0.25f);
 
-        // Add rigidbody (kinematic so it doesn't fall or move)
+        var trigger = doorObj.AddComponent<BoxCollider>();
+        trigger.isTrigger = true;
+        trigger.size = new Vector3(1f, 1f, 1f);
+
         var rb = doorObj.AddComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity = false;
         rb.constraints = RigidbodyConstraints.FreezeAll;
 
-        // Attach the controller
         var controllerComponent = doorObj.AddComponent<SummitDoorController>();
         controllerComponent.SetDebugLogging(_debugLogging.Value);
         controllerComponent.SetRoomDuration(_roomDurationSeconds.Value);
 
-        _log?.LogInfo($"Created summit door at position {_doorPosition.Value} in scene '{scene.name}'.");
+        _log?.LogInfo($"Created visible summit door in scene '{scene.name}'.");
         return controllerComponent;
     }
 }
