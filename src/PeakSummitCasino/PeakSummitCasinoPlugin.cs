@@ -13,7 +13,7 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
 {
     public const string ModId = "jonnyboy0715-lab.peak-summit-casino";
     public const string ModName = "PeakSummitCasino";
-    public const string ModVersion = "0.1.0";
+    public const string ModVersion = "0.1.2";
 
     private const string SummitDoorName = "PeakSummitCasino_SummitDoor";
     private const string SummitSceneKeyword = "summit";
