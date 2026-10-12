@@ -16,9 +16,11 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
     public const string ModVersion = "0.1.0";
 
     private const string SummitDoorName = "PeakSummitCasino_SummitDoor";
+    private const string SummitSceneKeyword = "summit";
 
     private ConfigEntry<float> _roomDurationSeconds;
     private ConfigEntry<bool> _debugLogging;
+    private ConfigEntry<Vector3> _doorPosition;
     private static ManualLogSource? _log;
 
     private readonly Dictionary<string, SummitDoorController> _doorsByScene = new();
@@ -41,9 +43,16 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
             "Print extra debug information while the mod is being tested."
         );
 
+        _doorPosition = Config.Bind(
+            "SummitGamblingRoom",
+            "DoorPosition",
+            new Vector3(0f, 5f, 10f),
+            "Position of the casino door at the summit (X, Y, Z)."
+        );
+
         SceneManager.sceneLoaded += OnSceneLoaded;
 
-        _log.LogInfo("PeakSummitCasino prototype loaded. This is source-only and unverified until tested inside PEAK.");
+        _log.LogInfo("PeakSummitCasino prototype loaded. Waiting for summit scene...");
     }
 
     private void OnDestroy()
@@ -60,6 +69,7 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
         {
             existingDoor.SetRoomDuration(_roomDurationSeconds.Value);
             existingDoor.SetDebugLogging(_debugLogging.Value);
+            _log?.LogInfo($"Reused existing door in scene '{scene.name}'.");
             return;
         }
 
@@ -67,16 +77,15 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
         door.SetRoomDuration(_roomDurationSeconds.Value);
         door.SetDebugLogging(_debugLogging.Value);
         _doorsByScene[scene.name] = door;
+
+        _log?.LogInfo($"Summit casino door initialized in scene '{scene.name}' at position {_doorPosition.Value}.");
     }
 
     private static bool ShouldHandleScene(Scene scene)
     {
         var name = scene.name;
-        return name.Contains("Peak", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Mountain", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Level", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Map", StringComparison.OrdinalIgnoreCase)
-            || name.Contains("Game", StringComparison.OrdinalIgnoreCase);
+        // Only handle the summit scene specifically
+        return name.Contains(SummitSceneKeyword, StringComparison.OrdinalIgnoreCase);
     }
 
     private SummitDoorController CreateSummitDoor(Scene scene)
@@ -86,25 +95,47 @@ public sealed class PeakSummitCasinoPlugin : BaseUnityPlugin
         {
             var controller = existing.GetComponent<SummitDoorController>();
             if (controller != null)
+            {
+                _log?.LogWarning("Door already exists; reusing it.");
                 return controller;
+            }
         }
 
+        // Create the door game object with a visible representation
         var doorObj = new GameObject(SummitDoorName);
-        doorObj.transform.position = Vector3.zero;
+        doorObj.transform.position = _doorPosition.Value;
+        doorObj.transform.rotation = Quaternion.identity;
 
+        // Add a visible mesh (cube as placeholder for a door)
+        var meshFilter = doorObj.AddComponent<MeshFilter>();
+        var meshRenderer = doorObj.AddComponent<MeshRenderer>();
+        
+        meshFilter.mesh = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+        
+        var mat = new Material(Shader.Find("Standard"));
+        mat.color = new Color(0.8f, 0.2f, 0.8f, 1f); // Purple-ish color for visibility
+        meshRenderer.material = mat;
+
+        // Scale the door to look like a doorway
+        doorObj.transform.localScale = new Vector3(3f, 4f, 0.2f);
+
+        // Add collider for trigger detection
         var collider = doorObj.AddComponent<BoxCollider>();
         collider.isTrigger = true;
-        collider.size = new Vector3(3f, 4f, 1f);
+        collider.size = Vector3.one; // Size is 1,1,1 since the mesh is scaled
 
+        // Add rigidbody (kinematic so it doesn't fall or move)
         var rb = doorObj.AddComponent<Rigidbody>();
         rb.isKinematic = true;
         rb.useGravity = false;
+        rb.constraints = RigidbodyConstraints.FreezeAll;
 
+        // Attach the controller
         var controllerComponent = doorObj.AddComponent<SummitDoorController>();
         controllerComponent.SetDebugLogging(_debugLogging.Value);
         controllerComponent.SetRoomDuration(_roomDurationSeconds.Value);
 
-        _log?.LogInfo($"Created summit door marker for scene '{scene.name}'.");
+        _log?.LogInfo($"Created summit door at position {_doorPosition.Value} in scene '{scene.name}'.");
         return controllerComponent;
     }
 }
